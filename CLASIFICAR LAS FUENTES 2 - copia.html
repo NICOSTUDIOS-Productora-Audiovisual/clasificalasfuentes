@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clasificación de Fuentes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        header {
+            background-color: #007BFF;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+
+        header h2 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 0;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        .actions button {
+            background-color: #28a745;
+            margin-right: 5px;
+        }
+
+        .actions button:hover {
+            background-color: #218838;
+        }
+
+        .actions .delete {
+            background-color: #dc3545;
+        }
+
+        .actions .delete:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>TU PÁGINA PARA CLASIFICAR LAS FUENTES</h1>
+        <h2>Una página creada por NICOSTUDIOS Productora Audiovisual</h2>
+    </header>
+    <div class="container">
+        <button id="add-source">AÑADIR FUENTES</button>
+        <button id="export">Exportar</button>
+        <button id="clear">Limpiar</button>
+        <table id="sources-table">
+            <thead>
+                <tr>
+                    <th>Fuente</th>
+                    <th>Atribución</th>
+                    <th>Según su naturaleza</th>
+                    <th>Según su origen o cercanía</th>
+                    <th>En función de su importancia</th>
+                    <th>Según el ámbito de procedencia</th>
+                    <th>Según la calidad de fuente</th>
+                    <th>Grado de representatividad</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Aquí se insertarán las filas dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal para añadir o editar fuentes -->
+    <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+        <div style="background:white; padding:20px; margin:50px auto; width:80%; max-width:600px; border-radius:10px; position:relative;">
+            <h3 id="modal-title">Añadir Fuente</h3>
+            <label>Introduce la fuente como se cita en el texto:</label>
+            <input type="text" id="source" style="width:100%; margin-bottom:10px;"><br>
+            <label>Atribución:</label>
+            <input type="text" id="attribution" style="width:100%; margin-bottom:10px;"><br>
+            <label>Según su naturaleza:</label>
+            <input type="text" id="nature" style="width:100%; margin-bottom:10px;"><br>
+            <label>Según su origen o cercanía a los hechos:</label>
+            <input type="text" id="proximity" style="width:100%; margin-bottom:10px;"><br>
+            <label>En función de su importancia en la información:</label>
+            <input type="text" id="importance" style="width:100%; margin-bottom:10px;"><br>
+            <label>Según el ámbito de procedencia:</label>
+            <input type="text" id="scope" style="width:100%; margin-bottom:10px;"><br>
+            <label>Según la calidad de fuente:</label>
+            <input type="text" id="quality" style="width:100%; margin-bottom:10px;"><br>
+            <label>Grado de representatividad o interlocución de las fuentes:</label>
+            <input type="text" id="representativity" style="width:100%; margin-bottom:10px;"><br>
+            <button id="save">Guardar</button>
+            <button onclick="closeModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        const sourcesTable = document.getElementById('sources-table').getElementsByTagName('tbody')[0];
+        const modal = document.getElementById('modal');
+        const fields = ['source', 'attribution', 'nature', 'proximity', 'importance', 'scope', 'quality', 'representativity'];
+        let currentEditRow = null;
+
+        // Load saved data from localStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedData = localStorage.getItem('sources');
+            if (savedData) {
+                JSON.parse(savedData).forEach(addRow);
+            }
+        });
+
+        document.getElementById('add-source').addEventListener('click', () => {
+            openModal();
+        });
+
+        document.getElementById('save').addEventListener('click', saveSource);
+
+        document.getElementById('clear').addEventListener('click', clearTable);
+
+        function openModal(data = {}) {
+            fields.forEach(field => {
+                document.getElementById(field).value = data[field] || '';
+            });
+            currentEditRow = null;
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        function saveSource() {
+            const data = {};
+            fields.forEach(field => {
+                data[field] = document.getElementById(field).value.trim();
+            });
+
+            if (currentEditRow) {
+                // Update existing row
+                fields.forEach((field, index) => {
+                    currentEditRow.children[index].innerText = data[field];
+                });
+            } else {
+                // Add new row
+                addRow(data);
+            }
+            saveToLocalStorage();
+            closeModal();
+        }
+
+        function addRow(data) {
+            const row = sourcesTable.insertRow();
+            fields.forEach(field => {
+                const cell = row.insertCell();
+                cell.innerText = data[field];
+            });
+            const actionsCell = row.insertCell();
+            actionsCell.className = 'actions';
+            actionsCell.innerHTML = `
+                <button onclick="editRow(this)">Editar</button>
+                <button onclick="duplicateRow(this)">Duplicar</button>
+                <button class="delete" onclick="deleteRow(this)">Eliminar</button>
+            `;
+        }
+
+        function editRow(button) {
+            const row = button.parentElement.parentElement;
+            currentEditRow = row;
+            const data = {};
+            fields.forEach((field, index) => {
+                data[field] = row.children[index].innerText;
+            });
+            openModal(data);
+        }
+
+        function duplicateRow(button) {
+            const row = button.parentElement.parentElement;
+            const data = {};
+            fields.forEach((field, index) => {
+                data[field] = row.children[index].innerText;
+            });
+            addRow(data);
+            saveToLocalStorage();
+        }
+
+        function deleteRow(button) {
+            const row = button.parentElement.parentElement;
+            sourcesTable.removeChild(row);
+            saveToLocalStorage();
+        }
+
+        function clearTable() {
+            sourcesTable.innerHTML = '';
+            localStorage.removeItem('sources');
+        }
+
+        function saveToLocalStorage() {
+            const data = [];
+            Array.from(sourcesTable.rows).forEach(row => {
+                const rowData = {};
+                fields.forEach((field, index) => {
+                    rowData[field] = row.children[index].innerText;
+                });
+                data.push(rowData);
+            });
+            localStorage.setItem('sources', JSON.stringify(data));
+        }
+    </script>
+</body>
+</html>
+
